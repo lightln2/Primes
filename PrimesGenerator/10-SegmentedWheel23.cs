@@ -10,13 +10,11 @@ namespace PrimesGenerator
     public class SegmentedWheel23 : ISieve
     {
         const int BUFFER_LENGTH = 128 * 1024;
-        const int WHEEL = 6;
-        const int WHEEL_PRIMES_COUNT = 2;
-        private long[] WheelRemainders = { 1, 5 };
 
         private long Length;
         private long[] FirstPrimes;
-        private long[][] PrimeMultiples;
+        private long[] PrimeMultiples_6kPlus1;
+        private long[] PrimeMultiples_6kPlus5;
 
         public SegmentedWheel23(long length)
         {
@@ -25,41 +23,45 @@ namespace PrimesGenerator
             SieveOfEratosthenes sieve = new SieveOfEratosthenes(firstChunkLength);
             List<long> firstPrimes = new List<long>();
             sieve.ListPrimes(firstPrimes.Add);
-            FirstPrimes = firstPrimes.Skip(WHEEL_PRIMES_COUNT).ToArray();
-            PrimeMultiples = new long[WheelRemainders.Length][];
-            for(int i = 0; i < WheelRemainders.Length; i++)
+            FirstPrimes = firstPrimes.Skip(2).ToArray();
+            PrimeMultiples_6kPlus1 = new long[FirstPrimes.Length];
+            PrimeMultiples_6kPlus5 = new long[FirstPrimes.Length];
+            for(int j = 0; j < FirstPrimes.Length; j++)
             {
-                PrimeMultiples[i] = new long[FirstPrimes.Length];
-                for(int j = 0; j < FirstPrimes.Length; j++)
-                {
-                    long prime = FirstPrimes[j];
-                    long val = prime * prime;
-                    while (val % WHEEL != WheelRemainders[i]) val += 2 * prime;
-                    PrimeMultiples[i][j] = (val - WheelRemainders[i]) / WHEEL;
-                }
+                long prime = FirstPrimes[j];
+                long val1 = prime * prime;
+                while (val1 % 6 != 1) val1 += 2 * prime;
+                PrimeMultiples_6kPlus1[j] = (val1 - 1) / 6;
+                long val2 = prime * prime;
+                while (val2 % 6 != 5) val2 += 2 * prime;
+                PrimeMultiples_6kPlus5[j] = (val2 - 5) / 6;
             }
         }
 
-        private void SieveSegment(BitArray[] segmentDatas, long segmentStart, long segmentEnd)
+        private void SieveSegment(BitArray segmentData_6kPlus1, BitArray segmentData_6kPlus5, long segmentStart, long segmentEnd)
         {
-            for(int i = 0; i < segmentDatas.Length; i++)
+            segmentData_6kPlus1.SetAll(true);
+            segmentData_6kPlus5.SetAll(true);
+            long segmentLength = segmentEnd - segmentStart;
+            for (int j = 0; j < FirstPrimes.Length; j++)
             {
-                BitArray segmentData = segmentDatas[i];
-                segmentData.SetAll(true);
-                long segmentLength = segmentEnd - segmentStart;
-                for (int j = 0; j < PrimeMultiples[i].Length; j++)
-                {
-                    long current = PrimeMultiples[i][j] - segmentStart;
-                    long prime = FirstPrimes[j];
-                    if (current >= segmentLength) continue;
+                long prime = FirstPrimes[j];
 
-                    while (current < segmentLength)
-                    {
-                        segmentData[(int)current] = false;
-                        current += prime;
-                    }
-                    PrimeMultiples[i][j] = segmentStart + current;
+                long val1 = PrimeMultiples_6kPlus1[j] - segmentStart;
+                while (val1 < segmentLength)
+                {
+                    segmentData_6kPlus1[(int)val1] = false;
+                    val1 += prime;
                 }
+                PrimeMultiples_6kPlus1[j] = val1 + segmentStart;
+
+                long val2 = PrimeMultiples_6kPlus5[j] - segmentStart;
+                while (val2 < segmentLength)
+                {
+                    segmentData_6kPlus5[(int)val2] = false;
+                    val2 += prime;
+                }
+                PrimeMultiples_6kPlus5[j] = val2 + segmentStart;
             }
         }
 
@@ -68,27 +70,28 @@ namespace PrimesGenerator
             callback.Invoke(2);
             callback.Invoke(3);
             callback.Invoke(5);
-            BitArray[] segmentDatas = new BitArray[WheelRemainders.Length];
-            for(int i = 0; i < segmentDatas.Length; i++)
-            {
-                segmentDatas[i] = new BitArray(BUFFER_LENGTH);
-            }
-            long max = (Length + WHEEL - 1) / WHEEL;
+            BitArray segmentData_6kPlus1 = new BitArray(BUFFER_LENGTH);
+            BitArray segmentData_6kPlus5 = new BitArray(BUFFER_LENGTH);
+            long max = (Length + 5) / 6;
             long segmentStart = 1;
             long segmentEnd = Math.Min(segmentStart + BUFFER_LENGTH, max);
             while (segmentStart < max)
             {
-                SieveSegment(segmentDatas, segmentStart, segmentEnd);
+                SieveSegment(segmentData_6kPlus1, segmentData_6kPlus5, segmentStart, segmentEnd);
                 for (int i = 0; i < segmentEnd - segmentStart; i++)
                 {
-                    for(int j = 0; j < segmentDatas.Length; j++)
+                    if(segmentData_6kPlus1[i])
                     {
-                        if (segmentDatas[j][i])
-                        {
-                            long p = (segmentStart + i) * WHEEL + WheelRemainders[j];
-                            if (p >= Length) break;
-                            callback.Invoke(p);
-                        }
+                        long p = (segmentStart + i) * 6 + 1;
+                        if (p >= Length) break;
+                        callback.Invoke(p);
+                    }
+                    if (segmentData_6kPlus5[i])
+                    {
+                        long p = (segmentStart + i) * 6 + 5;
+                        if (p >= Length) break;
+                        callback.Invoke(p);
+
                     }
                 }
                 segmentStart = segmentEnd;
