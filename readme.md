@@ -19,7 +19,7 @@ on Windows, open solution with Visual Studio 2019 or run `dotnet build -c Releas
 SieveOfEratosthenes up to 1,000,000,000 in 00:00:12.5610926
 SieveOfSundaram up to 1,000,000,000 in 00:00:18.1613135
 SieveOfAtkin up to 1,000,000,000 in 00:00:11.3515272
-Wheel235 up to 1,000,000,000 in 00:00:17.7559908
+Wheel235 up to 1,000,000,000 in 00:00:09.6275754
 OptimizedSieveOfEratosthenes up to 1,000,000,000 in 00:00:06.5714213
 OptimizedSieveOfSundaram up to 1,000,000,000 in 00:00:06.5137706
 SegmentedSieveOfEratosthenes up to 1,000,000,000 in 00:00:08.6055209
